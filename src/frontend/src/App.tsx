@@ -13,23 +13,31 @@ import type { Language } from "./lib/i18n";
 import { getLanguage, getSession, seedIfEmpty } from "./lib/store";
 import type { User } from "./lib/types";
 
+import { AICoPilotPage } from "./pages/AICoPilotPage";
 import { AdminDashboardPage } from "./pages/AdminDashboardPage";
 import { AdminUsersPage } from "./pages/AdminUsersPage";
+import { BusinessSurvivalScorePage } from "./pages/BusinessSurvivalScorePage";
 import { CashflowPage } from "./pages/CashflowPage";
+import { CreditPassportPage } from "./pages/CreditPassportPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { DocumentsPage } from "./pages/DocumentsPage";
 import { EMICalculatorPage } from "./pages/EMICalculatorPage";
+import { InvisibleCreditScorePage } from "./pages/InvisibleCreditScorePage";
+import { LoanApprovalPredictorPage } from "./pages/LoanApprovalPredictorPage";
+import { LoanMarketplacePage } from "./pages/LoanMarketplacePage";
 import { LoginPage } from "./pages/LoginPage";
+import { PeerComparisonPage } from "./pages/PeerComparisonPage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { RiskIntelligencePage } from "./pages/RiskIntelligencePage";
+import { ScoreBreakdownPage } from "./pages/ScoreBreakdownPage";
+import { ScoreHistoryPage } from "./pages/ScoreHistoryPage";
 import { SignupPage } from "./pages/SignupPage";
 import { SimulatorPage } from "./pages/SimulatorPage";
 
-// ── Root layout ──────────────────────────────────────────────
 function RootLayout() {
   return <Outlet />;
 }
 
-// ── Route tree ───────────────────────────────────────────────
 const rootRoute = createRootRoute({ component: RootLayout });
 
 const indexRoute = createRoute({
@@ -86,6 +94,48 @@ const emiCalculatorRoute = createRoute({
   component: EMICalculatorPage,
 });
 
+const scoreBreakdownRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/score-breakdown",
+  component: ScoreBreakdownPage,
+});
+
+const aiCopilotRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/ai-copilot",
+  component: AICoPilotPage,
+});
+
+const peerComparisonRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/peer-comparison",
+  component: PeerComparisonPage,
+});
+
+const scoreHistoryRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/score-history",
+  component: ScoreHistoryPage,
+});
+
+const creditPassportRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/credit-passport",
+  component: CreditPassportPage,
+});
+
+const loanMarketplaceRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/loan-marketplace",
+  component: LoanMarketplacePage,
+});
+
+const riskIntelligenceRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/risk-intelligence",
+  component: RiskIntelligencePage,
+});
+
 const adminRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/admin",
@@ -98,6 +148,24 @@ const adminUsersRoute = createRoute({
   component: AdminUsersPage,
 });
 
+const invisibleScoreRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/invisible-score",
+  component: InvisibleCreditScorePage,
+});
+
+const loanPredictorRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/loan-predictor",
+  component: LoanApprovalPredictorPage,
+});
+
+const survivalScoreRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/survival-score",
+  component: BusinessSurvivalScorePage,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
@@ -108,8 +176,18 @@ const routeTree = rootRoute.addChildren([
   documentsRoute,
   simulatorRoute,
   emiCalculatorRoute,
+  scoreBreakdownRoute,
+  aiCopilotRoute,
+  peerComparisonRoute,
+  scoreHistoryRoute,
+  creditPassportRoute,
+  loanMarketplaceRoute,
+  riskIntelligenceRoute,
   adminRoute,
   adminUsersRoute,
+  invisibleScoreRoute,
+  loanPredictorRoute,
+  survivalScoreRoute,
 ]);
 
 const router = createRouter({ routeTree });
@@ -120,7 +198,6 @@ declare module "@tanstack/react-router" {
   }
 }
 
-// ── App root with context ─────────────────────────────────────
 export default function App() {
   useEffect(() => {
     seedIfEmpty();

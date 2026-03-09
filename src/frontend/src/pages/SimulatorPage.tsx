@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -19,6 +20,7 @@ import { useAppContext } from "../hooks/useAppContext";
 import { useT } from "../hooks/useT";
 import {
   calculateAltScore,
+  calculateBusinessTrustScore,
   formatCurrency,
   getRiskTier,
   getStabilityScore,
@@ -75,6 +77,16 @@ export function SimulatorPage() {
   const tier = getRiskTier(score);
   const stability = getStabilityScore(monthlyRevenue, monthlyExpenses);
   const diff = baseScore != null ? score - baseScore : null;
+
+  const trustScore = calculateBusinessTrustScore({
+    businessAge,
+    stabilityScore: stability,
+    monthlyRevenue,
+    monthlyExpenses,
+    industry,
+  });
+  const trustTier =
+    trustScore >= 70 ? "Low" : trustScore >= 40 ? "Medium" : "High";
 
   const expenseRatio =
     monthlyRevenue > 0 ? (monthlyExpenses / monthlyRevenue) * 100 : 0;
@@ -356,6 +368,42 @@ export function SimulatorPage() {
                         }}
                       />
                     </div>
+                  </div>
+
+                  {/* Business Trust Score */}
+                  <div
+                    data-ocid="simulator.trust_score.card"
+                    className="w-full rounded-lg bg-muted/50 p-3 space-y-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground font-medium">
+                        Business Trust Score
+                      </span>
+                      <Badge
+                        className={`text-xs px-2 py-0.5 border ${
+                          trustTier === "Low"
+                            ? "score-low"
+                            : trustTier === "Medium"
+                              ? "score-medium"
+                              : "score-high"
+                        }`}
+                      >
+                        {trustTier === "Low"
+                          ? "High Trust"
+                          : trustTier === "Medium"
+                            ? "Moderate"
+                            : "Low Trust"}
+                      </Badge>
+                    </div>
+                    <div className="flex items-end gap-1">
+                      <span className="text-3xl font-display font-bold">
+                        {trustScore}
+                      </span>
+                      <span className="text-sm text-muted-foreground mb-1">
+                        / 100
+                      </span>
+                    </div>
+                    <Progress value={trustScore} className="h-2" />
                   </div>
                 </CardContent>
               </Card>

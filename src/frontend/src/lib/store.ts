@@ -1,5 +1,7 @@
 import {
   calculateAltScore,
+  calculateBusinessTrustScore,
+  calculateTraditionalScore,
   detectFraud,
   getRiskTier,
   getStabilityScore,
@@ -10,9 +12,10 @@ import type {
   CashflowData,
   CreditScore,
   Document,
+  Industry,
+  ScoreSnapshot,
   User,
 } from "./types";
-import type { Industry } from "./types";
 
 const KEYS = {
   USERS: "msme_users",
@@ -22,6 +25,7 @@ const KEYS = {
   DOCUMENTS: "msme_documents",
   SESSION: "msme_session",
   LANGUAGE: "msme_language",
+  SCORE_HISTORY: "msme_score_history",
 };
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -43,6 +47,23 @@ function upsertById<T extends { userId: string }>(key: string, item: T): void {
   if (idx >= 0) list[idx] = item;
   else list.push(item);
   save(key, list);
+}
+
+// ── Score History ─────────────────────────────────────────────
+export function appendScoreHistory(snapshot: ScoreSnapshot): void {
+  const history = load<ScoreSnapshot>(KEYS.SCORE_HISTORY);
+  history.push(snapshot);
+  // Keep max 50 snapshots per user
+  const userHistory = history.filter((h) => h.userId === snapshot.userId);
+  const otherHistory = history.filter((h) => h.userId !== snapshot.userId);
+  const trimmed = userHistory.slice(-50);
+  save(KEYS.SCORE_HISTORY, [...otherHistory, ...trimmed]);
+}
+
+export function getScoreHistory(userId: string): ScoreSnapshot[] {
+  return load<ScoreSnapshot>(KEYS.SCORE_HISTORY)
+    .filter((h) => h.userId === userId)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 }
 
 // ── Seed data ────────────────────────────────────────────────
@@ -123,9 +144,18 @@ export function seedIfEmpty(): void {
   ];
   save(KEYS.PROFILES, mockProfiles);
 
-  // Calculate and save scores for each profile
+  // Calculate and save scores + history for each profile
+  const historyDates = [
+    "2025-01-01T00:00:00Z",
+    "2025-02-01T00:00:00Z",
+    "2025-03-01T00:00:00Z",
+    "2025-04-01T00:00:00Z",
+    "2025-05-01T00:00:00Z",
+    "2025-06-01T00:00:00Z",
+  ];
+
   for (const profile of mockProfiles) {
-    const score = calculateAltScore({
+    const altScore = calculateAltScore({
       monthlyRevenue: profile.monthlyRevenue,
       businessAge: profile.businessAge,
       monthlyExpenses: profile.monthlyExpenses,
@@ -135,11 +165,20 @@ export function seedIfEmpty(): void {
       profile.monthlyRevenue,
       profile.monthlyExpenses,
     );
+    const trustScore = calculateBusinessTrustScore({
+      businessAge: profile.businessAge,
+      stabilityScore: stability,
+      monthlyRevenue: profile.monthlyRevenue,
+      monthlyExpenses: profile.monthlyExpenses,
+      industry: profile.industry,
+    });
+
     const creditScore: CreditScore = {
       userId: profile.userId,
-      altScore: score,
+      altScore,
       traditionalScore: null,
-      riskTier: getRiskTier(score),
+      trustScore,
+      riskTier: getRiskTier(altScore),
       stabilityScore: stability,
       fraudFlag: detectFraud({
         monthlyRevenue: profile.monthlyRevenue,
@@ -149,6 +188,26 @@ export function seedIfEmpty(): void {
       calculatedAt: new Date().toISOString(),
     };
     upsertById(KEYS.SCORES, creditScore);
+
+    // Seed historical snapshots with slight variation
+    const variations = [-30, -20, -15, -5, 5, 0];
+    for (let i = 0; i < historyDates.length; i++) {
+      const variance = variations[i] ?? 0;
+      const snap: ScoreSnapshot = {
+        userId: profile.userId,
+        date: historyDates[i],
+        altScore: Math.min(900, Math.max(300, altScore + variance)),
+        trustScore: Math.min(
+          100,
+          Math.max(0, trustScore + Math.round(variance / 10)),
+        ),
+        traditionalScore: null,
+        riskTier: getRiskTier(
+          Math.min(900, Math.max(300, altScore + variance)),
+        ),
+      };
+      appendScoreHistory(snap);
+    }
   }
 
   const mockCashflow: CashflowData[] = [
@@ -243,10 +302,7 @@ export function getProfile(userId: string): BusinessProfile | null {
 export function saveProfile(profile: BusinessProfile): void {
   upsertById(KEYS.PROFILES, profile);
 
-  // Preserve existing traditionalScore when recalculating
-  const existing = getCreditScore(profile.userId);
-
-  const score = calculateAltScore({
+  const altScore = calculateAltScore({
     monthlyRevenue: profile.monthlyRevenue,
     businessAge: profile.businessAge,
     monthlyExpenses: profile.monthlyExpenses,
@@ -256,20 +312,67 @@ export function saveProfile(profile: BusinessProfile): void {
     profile.monthlyRevenue,
     profile.monthlyExpenses,
   );
+  const trustScore = calculateBusinessTrustScore({
+    businessAge: profile.businessAge,
+    stabilityScore: stability,
+    monthlyRevenue: profile.monthlyRevenue,
+    monthlyExpenses: profile.monthlyExpenses,
+    industry: profile.industry,
+  });
+
+  const cashflow = getCashflow(profile.userId);
+  const cashflowConsistency = cashflow
+    ? (() => {
+        const revenues = [
+          cashflow.month1Revenue,
+          cashflow.month2Revenue,
+          cashflow.month3Revenue,
+        ];
+        const avg = revenues.reduce((a, b) => a + b, 0) / 3;
+        if (avg <= 0) return 50;
+        const variance =
+          revenues.reduce((sum, r) => sum + (r - avg) ** 2, 0) / 3;
+        const cv = Math.sqrt(variance) / avg;
+        return Math.round(Math.max(0, Math.min(100, (1 - cv) * 100)));
+      })()
+    : null;
+
+  const fraudResult = detectFraud({
+    monthlyRevenue: profile.monthlyRevenue,
+    businessAge: profile.businessAge,
+    gstNumber: profile.gstNumber,
+  });
+
+  const traditionalScore = calculateTraditionalScore({
+    monthlyRevenue: profile.monthlyRevenue,
+    businessAge: profile.businessAge,
+    monthlyExpenses: profile.monthlyExpenses,
+    industry: profile.industry,
+    cashflowConsistency,
+    hasFraudFlag: !!fraudResult,
+  });
+
   const creditScore: CreditScore = {
     userId: profile.userId,
-    altScore: score,
-    traditionalScore: existing?.traditionalScore ?? null,
-    riskTier: getRiskTier(score),
+    altScore,
+    traditionalScore,
+    trustScore,
+    riskTier: getRiskTier(altScore),
     stabilityScore: stability,
-    fraudFlag: detectFraud({
-      monthlyRevenue: profile.monthlyRevenue,
-      businessAge: profile.businessAge,
-      gstNumber: profile.gstNumber,
-    }),
+    fraudFlag: fraudResult,
     calculatedAt: new Date().toISOString(),
   };
   upsertById(KEYS.SCORES, creditScore);
+
+  // Append to score history
+  appendScoreHistory({
+    userId: profile.userId,
+    date: new Date().toISOString(),
+    altScore,
+    trustScore,
+    traditionalScore,
+    riskTier: getRiskTier(altScore),
+  });
 }
 
 export function saveTraditionalScore(userId: string, score: number): void {
@@ -277,6 +380,16 @@ export function saveTraditionalScore(userId: string, score: number): void {
   if (!existing) return;
   const updated: CreditScore = { ...existing, traditionalScore: score };
   upsertById(KEYS.SCORES, updated);
+
+  // Append to history when traditional score changes
+  appendScoreHistory({
+    userId,
+    date: new Date().toISOString(),
+    altScore: existing.altScore,
+    trustScore: existing.trustScore,
+    traditionalScore: score,
+    riskTier: existing.riskTier,
+  });
 }
 
 // ── Credit Score ─────────────────────────────────────────────

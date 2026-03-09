@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Loader2, ShieldCheck, TrendingUp } from "lucide-react";
+import { Loader2, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useAppContext } from "../hooks/useAppContext";
@@ -87,15 +87,17 @@ export function LoginPage() {
 
       {/* Logo */}
       <div className="mb-8 flex flex-col items-center gap-3">
-        <div className="w-14 h-14 rounded-2xl gradient-teal flex items-center justify-center shadow-lg">
-          <TrendingUp className="h-7 w-7 text-white" />
-        </div>
+        <img
+          src="/assets/generated/credvist-logo-transparent.dim_400x400.png"
+          alt="CredVist logo"
+          className="w-16 h-16 object-contain drop-shadow-lg"
+        />
         <div className="text-center">
           <h1 className="font-display text-2xl font-bold text-foreground">
-            MSME <span className="text-primary">Credit Scorer</span>
+            Cred<span className="text-primary">Vist</span>
           </h1>
           <p className="text-xs text-muted-foreground mt-1">
-            Empowering Gujarat Businesses
+            AI-Powered Credit Intelligence
           </p>
         </div>
       </div>
@@ -104,7 +106,7 @@ export function LoginPage() {
         <CardHeader className="pb-2 pt-6 px-6">
           <h2 className="font-display text-xl font-bold">{t("login")}</h2>
           <p className="text-sm text-muted-foreground">
-            Sign in to your MSME account
+            Sign in to your CredVist account
           </p>
         </CardHeader>
         <CardContent className="px-6 pb-6">
@@ -126,7 +128,7 @@ export function LoginPage() {
               {errors.email && (
                 <p
                   className="text-xs text-destructive"
-                  data-ocid="login.email.error"
+                  data-ocid="login.email.error_state"
                 >
                   {errors.email}
                 </p>
@@ -150,7 +152,7 @@ export function LoginPage() {
               {errors.password && (
                 <p
                   className="text-xs text-destructive"
-                  data-ocid="login.password.error"
+                  data-ocid="login.password.error_state"
                 >
                   {errors.password}
                 </p>

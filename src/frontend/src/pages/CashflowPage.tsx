@@ -18,8 +18,13 @@ import { PageLayout } from "../components/PageLayout";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 import { useAppContext } from "../hooks/useAppContext";
 import { useT } from "../hooks/useT";
-import { formatCurrency, predictEMIRisk } from "../lib/scoring";
+import {
+  formatCurrency,
+  getCashflowPrediction,
+  predictEMIRisk,
+} from "../lib/scoring";
 import { getCashflow, saveCashflow } from "../lib/store";
+import type { CashflowData, CashflowPrediction } from "../lib/types";
 
 interface MonthData {
   revenue: string;
@@ -35,6 +40,7 @@ export function CashflowPage() {
     emiRiskPercent: number;
     advice: string;
   } | null>(null);
+  const [prediction, setPrediction] = useState<CashflowPrediction | null>(null);
 
   const [months, setMonths] = useState<[MonthData, MonthData, MonthData]>([
     { revenue: "", expense: "" },
@@ -65,6 +71,7 @@ export function CashflowPage() {
         emiRiskPercent: data.emiRiskPercent,
         advice: "Loaded from saved data.",
       });
+      setPrediction(getCashflowPrediction(data));
     }
   }, [user]);
 
@@ -104,13 +111,16 @@ export function CashflowPage() {
     const { predictedSurplus, emiRiskPercent, advice } =
       predictEMIRisk(cashflowInput);
 
-    saveCashflow({
+    const cashflowData: CashflowData = {
       userId: user.id,
       ...cashflowInput,
       predictedSurplus,
       emiRiskPercent,
       updatedAt: new Date().toISOString(),
-    });
+    };
+
+    saveCashflow(cashflowData);
+    setPrediction(getCashflowPrediction(cashflowData));
 
     setResult({ predictedSurplus, emiRiskPercent, advice });
     setIsLoading(false);
@@ -309,6 +319,111 @@ export function CashflowPage() {
                     <p className="text-sm text-muted-foreground">
                       Enter data and click "{t("calculate")}" to see analysis
                     </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Month 4 Prediction */}
+              {result && prediction && (
+                <Card
+                  data-ocid="cashflow.prediction.panel"
+                  className="animate-fade-up"
+                >
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base font-display flex items-center gap-2">
+                      {prediction.trend === "improving" ? (
+                        <TrendingUp className="h-4 w-4 text-score-low" />
+                      ) : prediction.trend === "declining" ? (
+                        <TrendingDown className="h-4 w-4 text-score-high" />
+                      ) : (
+                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                      )}
+                      Month 4 Prediction
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4 pb-5">
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div className="rounded-lg bg-muted/50 p-2">
+                        <p className="text-xs text-muted-foreground mb-1">
+                          Revenue
+                        </p>
+                        <p className="text-sm font-display font-bold">
+                          {formatCurrency(prediction.month4Revenue)}
+                        </p>
+                      </div>
+                      <div className="rounded-lg bg-muted/50 p-2">
+                        <p className="text-xs text-muted-foreground mb-1">
+                          Expenses
+                        </p>
+                        <p className="text-sm font-display font-bold">
+                          {formatCurrency(prediction.month4Expense)}
+                        </p>
+                      </div>
+                      <div
+                        className={cn(
+                          "rounded-lg p-2",
+                          prediction.month4Surplus >= 0
+                            ? "bg-score-low-bg"
+                            : "bg-score-high-bg",
+                        )}
+                      >
+                        <p className="text-xs text-muted-foreground mb-1">
+                          Surplus
+                        </p>
+                        <p
+                          className={cn(
+                            "text-sm font-display font-bold",
+                            prediction.month4Surplus >= 0
+                              ? "text-score-low"
+                              : "text-score-high",
+                          )}
+                        >
+                          {prediction.month4Surplus >= 0 ? "+" : ""}
+                          {formatCurrency(prediction.month4Surplus)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Trend badge */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        Trend:
+                      </span>
+                      <Badge
+                        className={cn(
+                          "text-xs px-2 py-0.5 border",
+                          prediction.trend === "improving"
+                            ? "score-low"
+                            : prediction.trend === "declining"
+                              ? "score-high"
+                              : "bg-muted text-muted-foreground border-border",
+                        )}
+                      >
+                        {prediction.trend.charAt(0).toUpperCase() +
+                          prediction.trend.slice(1)}
+                      </Badge>
+                    </div>
+
+                    {/* Risk alert or healthy message */}
+                    <div
+                      className={cn(
+                        "rounded-lg p-3 text-xs",
+                        prediction.riskFlag
+                          ? "bg-destructive/10 border border-destructive/20 text-destructive"
+                          : "bg-score-low-bg border border-score-low/20",
+                      )}
+                    >
+                      <div className="flex items-start gap-2">
+                        {prediction.riskFlag ? (
+                          <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                        ) : (
+                          <CheckCircle2 className="h-3.5 w-3.5 shrink-0 mt-0.5 text-score-low" />
+                        )}
+                        <p className="leading-relaxed">
+                          {prediction.riskMessage}
+                        </p>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               )}

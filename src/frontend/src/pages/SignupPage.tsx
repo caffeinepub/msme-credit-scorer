@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Loader2, TrendingUp } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useAppContext } from "../hooks/useAppContext";
@@ -70,7 +70,7 @@ export function SignupPage() {
     }
 
     setUser(loginResult.user);
-    toast.success("Account created! Welcome to MSME Credit Scorer.");
+    toast.success("Account created! Welcome to CredVist.");
 
     if (loginResult.user.role === "admin") {
       navigate({ to: "/admin" });
@@ -89,15 +89,17 @@ export function SignupPage() {
 
       {/* Logo */}
       <div className="mb-8 flex flex-col items-center gap-3">
-        <div className="w-14 h-14 rounded-2xl gradient-teal flex items-center justify-center shadow-lg">
-          <TrendingUp className="h-7 w-7 text-white" />
-        </div>
+        <img
+          src="/assets/generated/credvist-logo-transparent.dim_400x400.png"
+          alt="CredVist logo"
+          className="w-16 h-16 object-contain drop-shadow-lg"
+        />
         <div className="text-center">
           <h1 className="font-display text-2xl font-bold text-foreground">
-            MSME <span className="text-primary">Credit Scorer</span>
+            Cred<span className="text-primary">Vist</span>
           </h1>
           <p className="text-xs text-muted-foreground mt-1">
-            Join Gujarat's credit ecosystem
+            Build Your Financial Identity
           </p>
         </div>
       </div>
@@ -106,7 +108,7 @@ export function SignupPage() {
         <CardHeader className="pb-2 pt-6 px-6">
           <h2 className="font-display text-xl font-bold">{t("signup")}</h2>
           <p className="text-sm text-muted-foreground">
-            Create your MSME account
+            Create your CredVist account
           </p>
         </CardHeader>
         <CardContent className="px-6 pb-6">

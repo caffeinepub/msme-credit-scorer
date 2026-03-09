@@ -102,13 +102,16 @@ export function NavBar() {
         {/* Logo */}
         <Link
           to={user.role === "admin" ? "/admin" : "/dashboard"}
+          data-ocid="nav.logo.link"
           className="flex items-center gap-2 mr-4 shrink-0"
         >
-          <div className="w-8 h-8 rounded-md gradient-teal flex items-center justify-center shadow-sm">
-            <span className="text-white font-display font-bold text-sm">M</span>
-          </div>
+          <img
+            src="/assets/generated/credvist-logo-transparent.dim_400x400.png"
+            alt="CredVist logo"
+            className="h-8 w-8 object-contain rounded-md"
+          />
           <span className="font-display font-bold text-sm hidden sm:block text-foreground">
-            MSME<span className="text-primary"> Credit</span>
+            Cred<span className="text-primary">Vist</span>
           </span>
         </Link>
 

@@ -5,14 +5,27 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Link } from "@tanstack/react-router";
 import {
+  Activity,
+  AlertTriangle,
   ArrowRight,
+  Award,
+  Banknote,
+  BarChart2,
+  Bot,
   Building2,
   Calculator,
+  CheckCircle2,
+  Eye,
   FileText,
   HelpCircle,
+  LineChart,
   MapPin,
+  Radar,
+  Shield,
   Sliders,
+  Target,
   TrendingUp,
+  Users,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -23,17 +36,20 @@ import { ScoreGauge } from "../components/ScoreGauge";
 import { useAppContext } from "../hooks/useAppContext";
 import { useT } from "../hooks/useT";
 import {
+  calculateBusinessHealth,
+  calculateLenderConfidence,
   formatCurrency,
   getTraditionalScoreLabel,
   getTraditionalScoreTier,
 } from "../lib/scoring";
-import {
-  getCashflow,
-  getCreditScore,
-  getProfile,
-  saveTraditionalScore,
-} from "../lib/store";
-import type { BusinessProfile, CashflowData, CreditScore } from "../lib/types";
+import { getCashflow, getCreditScore, getProfile } from "../lib/store";
+import type {
+  BusinessHealthData,
+  BusinessProfile,
+  CashflowData,
+  CreditScore,
+  LenderConfidenceData,
+} from "../lib/types";
 
 export function DashboardPage() {
   const { user } = useAppContext();
@@ -41,39 +57,43 @@ export function DashboardPage() {
   const [creditScore, setCreditScore] = useState<CreditScore | null>(null);
   const [cashflow, setCashflow] = useState<CashflowData | null>(null);
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
-  const [cibilInput, setCibilInput] = useState<string>("");
-  const [cibilError, setCibilError] = useState<string>("");
+  const [health, setHealth] = useState<BusinessHealthData | null>(null);
+  const [confidence, setConfidence] = useState<LenderConfidenceData | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!user) return;
-    setCreditScore(getCreditScore(user.id));
-    setCashflow(getCashflow(user.id));
-    setProfile(getProfile(user.id));
+    const p = getProfile(user.id);
+    const s = getCreditScore(user.id);
+    const c = getCashflow(user.id);
+    setCreditScore(s);
+    setCashflow(c);
+    setProfile(p);
+    if (p && s) {
+      setHealth(calculateBusinessHealth(p, s, c));
+      setConfidence(calculateLenderConfidence(p, s, c));
+    }
   }, [user]);
 
   const tierLabel = creditScore
     ? t(creditScore.riskTier.toLowerCase() as "low" | "medium" | "high")
     : "—";
 
-  function handleSaveCibil() {
-    if (!user) return;
-    const val = Number.parseInt(cibilInput, 10);
-    if (Number.isNaN(val) || val < 300 || val > 900) {
-      setCibilError("Please enter a valid score between 300 and 900");
-      return;
-    }
-    setCibilError("");
-    saveTraditionalScore(user.id, val);
-    const updated = getCreditScore(user.id);
-    setCreditScore(updated);
-    setCibilInput("");
-    toast.success("CIBIL score saved successfully");
-  }
-
   const tradScore = creditScore?.traditionalScore ?? null;
   const altScore = creditScore?.altScore ?? null;
   const scoreDiff =
     tradScore != null && altScore != null ? altScore - tradScore : null;
+
+  const trustScore = creditScore?.trustScore ?? null;
+  const trustTier =
+    trustScore != null
+      ? trustScore >= 70
+        ? "Low"
+        : trustScore >= 40
+          ? "Medium"
+          : "High"
+      : null;
 
   return (
     <ProtectedRoute>
@@ -134,9 +154,9 @@ export function DashboardPage() {
             </Card>
           )}
 
-          {/* Score cards — Alt Score + Traditional Score side by side */}
+          {/* Score cards — 3-column: Alt Score + Traditional + Trust Score */}
           {creditScore && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* Alt Score */}
               <Card
                 data-ocid="dashboard.score.card"
@@ -168,73 +188,48 @@ export function DashboardPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <CardTitle className="text-sm text-muted-foreground font-medium">
-                        {t("traditionalScore")}
+                        Traditional Credit Score
                       </CardTitle>
                       <p className="text-xs text-muted-foreground mt-0.5 opacity-70">
-                        CIBIL Score (300–900)
+                        System Estimated (300–900)
                       </p>
                     </div>
                     <div className="flex items-center gap-1 text-xs text-muted-foreground cursor-help group relative">
                       <HelpCircle className="h-3.5 w-3.5" />
                       <span className="hidden group-hover:block absolute right-0 top-5 w-48 bg-popover text-popover-foreground text-xs p-2 rounded shadow-md border border-border z-10">
-                        CIBIL is India's traditional credit bureau score.
-                        Combined with your Alt Score, it gives lenders a
-                        complete picture.
+                        Your traditional credit score is automatically estimated
+                        by the system based on your revenue, expenses, business
+                        age, and cashflow consistency.
                       </span>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="flex flex-col flex-1 justify-between">
                   {tradScore == null ? (
-                    /* Enter CIBIL Score */
                     <div className="space-y-3">
-                      <p className="text-xs text-muted-foreground">
-                        {t("enterCibilScore")}
-                      </p>
-                      <div className="flex gap-2">
-                        <Input
-                          data-ocid="dashboard.traditional_score.input"
-                          type="number"
-                          min={300}
-                          max={900}
-                          placeholder={t("cibilScoreRange")}
-                          value={cibilInput}
-                          onChange={(e) => {
-                            setCibilInput(e.target.value);
-                            setCibilError("");
-                          }}
-                          onKeyDown={(e) =>
-                            e.key === "Enter" && handleSaveCibil()
-                          }
-                          className="text-sm"
-                        />
-                        <Button
-                          data-ocid="dashboard.traditional_score.save_button"
-                          size="sm"
-                          onClick={handleSaveCibil}
-                        >
-                          {t("save")}
-                        </Button>
-                      </div>
-                      {cibilError && (
-                        <p className="text-xs text-destructive">{cibilError}</p>
-                      )}
-                      <p className="text-xs text-muted-foreground opacity-60">
-                        {t("whyTwoScores")} Alt score uses business data; CIBIL
-                        uses repayment history. Banks check both.
+                      <p className="text-sm text-muted-foreground">
+                        Complete your profile to generate your score.
                       </p>
                     </div>
                   ) : (
-                    /* Display CIBIL Score */
                     <div className="space-y-3">
                       <div className="flex items-end gap-2">
-                        <span className="font-display font-bold text-5xl leading-none">
+                        <span
+                          data-ocid="dashboard.traditional_score.score"
+                          className="font-display font-bold text-5xl leading-none"
+                        >
                           {tradScore}
                         </span>
                         <span className="text-sm text-muted-foreground mb-1">
                           / 900
                         </span>
                       </div>
+                      <Badge
+                        variant="secondary"
+                        className="text-xs font-medium w-fit"
+                      >
+                        System Estimated
+                      </Badge>
                       <Badge
                         className={`text-xs font-semibold px-2 py-0.5 border ${
                           getTraditionalScoreTier(tradScore) === "Low"
@@ -246,7 +241,6 @@ export function DashboardPage() {
                       >
                         {getTraditionalScoreLabel(tradScore)}
                       </Badge>
-
                       {scoreDiff != null && (
                         <p className="text-xs text-muted-foreground">
                           {scoreDiff > 0 ? (
@@ -256,52 +250,261 @@ export function DashboardPage() {
                             </span>
                           ) : scoreDiff < 0 ? (
                             <span className="text-score-medium">
-                              CIBIL is {Math.abs(scoreDiff)} pts higher — good
-                              repayment history
+                              Traditional score is {Math.abs(scoreDiff)} pts
+                              higher — good repayment history
                             </span>
                           ) : (
                             <span>Scores are equal — consistent profile</span>
                           )}
                         </p>
                       )}
-
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-xs text-muted-foreground h-auto p-0 hover:text-foreground"
-                        onClick={() => {
-                          if (!user) return;
-                          saveTraditionalScore(user.id, 0);
-                          const updated = getCreditScore(user.id);
-                          // Reset to null effectively
-                          if (updated)
-                            setCreditScore({
-                              ...updated,
-                              traditionalScore: null,
-                            });
-                        }}
-                      >
-                        Update CIBIL score
-                      </Button>
                     </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Business Trust Score */}
+              <Card
+                data-ocid="dashboard.trust_score.card"
+                className="flex flex-col pt-6 pb-4"
+              >
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm text-muted-foreground font-medium">
+                    {t("trustScore")}
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground mt-0.5 opacity-70">
+                    Trust Score (0–100)
+                  </p>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-3">
+                  {trustScore != null ? (
+                    <>
+                      <div className="flex items-end gap-2">
+                        <span className="font-display font-bold text-5xl leading-none">
+                          {trustScore}
+                        </span>
+                        <span className="text-sm text-muted-foreground mb-1">
+                          / 100
+                        </span>
+                      </div>
+                      {trustTier && (
+                        <Badge
+                          className={`text-xs font-semibold px-2 py-0.5 border w-fit ${
+                            trustTier === "Low"
+                              ? "score-low"
+                              : trustTier === "Medium"
+                                ? "score-medium"
+                                : "score-high"
+                          }`}
+                        >
+                          {trustTier === "Low"
+                            ? "High Trust"
+                            : trustTier === "Medium"
+                              ? "Moderate Trust"
+                              : "Low Trust"}
+                        </Badge>
+                      )}
+                      <Progress value={trustScore} className="h-2 mt-1" />
+                      <p className="text-xs text-muted-foreground">
+                        Based on business age, stability, and expense efficiency
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Complete your profile to calculate trust score
+                    </p>
                   )}
                 </CardContent>
               </Card>
             </div>
           )}
 
-          {/* Risk + Stability row */}
-          {creditScore && (
+          {/* Business Health Meter + Lender Confidence — side by side */}
+          {creditScore && profile && health && confidence && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Card data-ocid="dashboard.risk.card">
-                <CardHeader className="pb-1 pt-4">
-                  <CardTitle className="text-sm text-muted-foreground font-medium">
-                    {t("riskTier")}
-                  </CardTitle>
+              {/* Business Health Meter */}
+              <Card data-ocid="dashboard.health.card">
+                <CardHeader className="pb-2 pt-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-sm text-muted-foreground font-medium">
+                        {t("businessHealth")}
+                      </CardTitle>
+                      <p className="text-xs text-muted-foreground opacity-70">
+                        Live Financial Health Meter
+                      </p>
+                    </div>
+                    <Badge
+                      className={`text-xs px-2.5 py-1 border font-bold ${
+                        health.status === "Strong"
+                          ? "score-low"
+                          : health.status === "Moderate"
+                            ? "score-medium"
+                            : "score-high"
+                      }`}
+                    >
+                      {health.status === "Strong"
+                        ? t("healthStrong")
+                        : health.status === "Moderate"
+                          ? t("healthModerate")
+                          : t("healthRisky")}
+                    </Badge>
+                  </div>
                 </CardHeader>
-                <CardContent className="flex items-center gap-3 pb-4">
+                <CardContent className="pb-5 space-y-3">
+                  <div className="flex items-end gap-2">
+                    <span className="font-display font-bold text-4xl">
+                      {health.score}
+                    </span>
+                    <span className="text-sm text-muted-foreground mb-1">
+                      / 100
+                    </span>
+                  </div>
+                  {/* Segmented meter */}
+                  <div className="flex gap-1 h-3">
+                    {["Risky", "Moderate", "Strong"].map((seg, i) => (
+                      <div
+                        key={seg}
+                        className={`flex-1 rounded-full transition-all ${
+                          health.status === "Strong" ||
+                          (health.status === "Moderate" && i <= 1) ||
+                          (health.status === "Risky" && i === 0)
+                            ? health.status === "Strong"
+                              ? "bg-score-low"
+                              : health.status === "Moderate"
+                                ? "bg-score-medium"
+                                : "bg-score-high"
+                            : "bg-muted"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {health.description}
+                  </p>
+                  <div className="space-y-1.5">
+                    {health.components.map((c) => (
+                      <div key={c.label} className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground w-32 shrink-0">
+                          {c.label}
+                        </span>
+                        <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-primary/60"
+                            style={{
+                              width: `${Math.round((c.value / c.maxValue) * 100)}%`,
+                            }}
+                          />
+                        </div>
+                        <span className="text-xs text-muted-foreground w-10 text-right shrink-0">
+                          {c.value}/{c.maxValue}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Lender Confidence Score */}
+              <Card data-ocid="dashboard.confidence.card">
+                <CardHeader className="pb-2 pt-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-sm text-muted-foreground font-medium">
+                        {t("lenderConfidence")}
+                      </CardTitle>
+                      <p className="text-xs text-muted-foreground opacity-70">
+                        How lenders see your business
+                      </p>
+                    </div>
+                    <span
+                      className={`font-display font-bold text-2xl ${
+                        confidence.score >= 65
+                          ? "text-score-low"
+                          : confidence.score >= 50
+                            ? "text-score-medium"
+                            : "text-score-high"
+                      }`}
+                    >
+                      Grade {confidence.grade}
+                    </span>
+                  </div>
+                </CardHeader>
+                <CardContent className="pb-5 space-y-3">
+                  <div className="flex items-end gap-2">
+                    <span className="font-display font-bold text-4xl">
+                      {confidence.score}
+                    </span>
+                    <span className="text-sm text-muted-foreground mb-1">
+                      / 100
+                    </span>
+                    <Badge
+                      className={`mb-1 text-xs px-2 py-0.5 border ml-1 ${
+                        confidence.score >= 65
+                          ? "score-low"
+                          : confidence.score >= 50
+                            ? "score-medium"
+                            : "score-high"
+                      }`}
+                    >
+                      {confidence.label}
+                    </Badge>
+                  </div>
+                  <Progress value={confidence.score} className="h-2" />
+                  <p className="text-xs text-muted-foreground">
+                    {confidence.description}
+                  </p>
+                  <div className="space-y-1.5">
+                    {confidence.factors.map((f) => (
+                      <div key={f.name} className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground w-36 shrink-0">
+                          {f.name}
+                        </span>
+                        <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${
+                              f.positive ? "bg-score-low" : "bg-score-medium"
+                            }`}
+                            style={{
+                              width: `${Math.round((f.contribution / 30) * 100)}%`,
+                            }}
+                          />
+                        </div>
+                        <span className="text-xs text-muted-foreground w-6 text-right shrink-0">
+                          {f.contribution}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Risk Level Indicator */}
+          {creditScore && (
+            <div
+              data-ocid="dashboard.risk.card"
+              className={`rounded-xl p-4 flex items-center gap-4 border ${
+                creditScore.riskTier === "Low"
+                  ? "bg-score-low-bg border-score-low/30"
+                  : creditScore.riskTier === "Medium"
+                    ? "bg-score-medium-bg border-score-medium/30"
+                    : "bg-score-high-bg border-score-high/30"
+              }`}
+            >
+              {creditScore.riskTier === "Low" ? (
+                <CheckCircle2 className="h-6 w-6 text-score-low shrink-0" />
+              ) : creditScore.riskTier === "Medium" ? (
+                <Shield className="h-6 w-6 text-score-medium shrink-0" />
+              ) : (
+                <AlertTriangle className="h-6 w-6 text-score-high shrink-0" />
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold text-sm">Risk Level:</span>
                   <Badge
-                    className={`text-base px-4 py-1.5 border font-semibold ${
+                    className={`text-sm px-3 py-1 border font-bold ${
                       creditScore.riskTier === "Low"
                         ? "score-low"
                         : creditScore.riskTier === "Medium"
@@ -309,48 +512,58 @@ export function DashboardPage() {
                           : "score-high"
                     }`}
                   >
-                    {tierLabel}
+                    {tierLabel} Risk
                   </Badge>
-                  <div className="text-xs text-muted-foreground">
-                    {creditScore.riskTier === "Low" &&
-                      "Excellent creditworthiness — bank-ready"}
-                    {creditScore.riskTier === "Medium" &&
-                      "Good standing — some improvement areas"}
-                    {creditScore.riskTier === "High" &&
-                      "Needs attention — focus on expenses & age"}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card data-ocid="dashboard.stability.card">
-                <CardHeader className="pb-1 pt-4">
-                  <CardTitle className="text-sm text-muted-foreground font-medium">
-                    {t("stabilityScore")}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pb-4 space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-2xl font-display font-bold">
-                      {creditScore.stabilityScore}
-                      <span className="text-sm text-muted-foreground font-normal ml-1">
-                        / 100
-                      </span>
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {creditScore.stabilityScore >= 70
-                        ? "Stable"
-                        : creditScore.stabilityScore >= 40
-                          ? "Moderate"
-                          : "Unstable"}
-                    </span>
-                  </div>
-                  <Progress
-                    value={creditScore.stabilityScore}
-                    className="h-2"
-                  />
-                </CardContent>
-              </Card>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {creditScore.riskTier === "Low" &&
+                    "Excellent creditworthiness — you're bank-ready for MSME loans"}
+                  {creditScore.riskTier === "Medium" &&
+                    "Good standing — a few improvements will move you to Low Risk"}
+                  {creditScore.riskTier === "High" &&
+                    "Needs attention — focus on reducing expenses and building business age"}
+                </p>
+              </div>
+              <Link to="/score-breakdown">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  data-ocid="dashboard.risk.button"
+                  className="shrink-0 text-xs"
+                >
+                  View Breakdown
+                </Button>
+              </Link>
             </div>
+          )}
+
+          {/* Stability row */}
+          {creditScore && (
+            <Card data-ocid="dashboard.stability.card">
+              <CardHeader className="pb-1 pt-4">
+                <CardTitle className="text-sm text-muted-foreground font-medium">
+                  {t("stabilityScore")}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pb-4 space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-2xl font-display font-bold">
+                    {creditScore.stabilityScore}
+                    <span className="text-sm text-muted-foreground font-normal ml-1">
+                      / 100
+                    </span>
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {creditScore.stabilityScore >= 70
+                      ? "Stable"
+                      : creditScore.stabilityScore >= 40
+                        ? "Moderate"
+                        : "Unstable"}
+                  </span>
+                </div>
+                <Progress value={creditScore.stabilityScore} className="h-2" />
+              </CardContent>
+            </Card>
           )}
 
           {/* Profile summary */}
@@ -379,51 +592,133 @@ export function DashboardPage() {
             </div>
           )}
 
-          {/* Quick actions */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {[
-              {
-                to: "/cashflow",
-                icon: TrendingUp,
-                label: "Cashflow Analysis",
-                desc: "Track 3-month trends",
-              },
-              {
-                to: "/documents",
-                icon: FileText,
-                label: "Documents",
-                desc: "Upload KYC & financials",
-              },
-              {
-                to: "/simulator",
-                icon: Sliders,
-                label: "Score Simulator",
-                desc: "What-if scenarios",
-              },
-              {
-                to: "/emi-calculator",
-                icon: Calculator,
-                label: t("emiCalculator"),
-                desc: "Calculate loan repayments",
-              },
-            ].map(({ to, icon: Icon, label, desc }) => (
-              <Link key={to} to={to}>
-                <Card className="p-4 hover:border-primary/40 hover:shadow-sm transition-all cursor-pointer group">
-                  <div className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                      <Icon className="h-4 w-4 text-primary" />
+          {/* Quick actions grid */}
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              Tools &amp; Insights
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {[
+                {
+                  to: "/cashflow",
+                  icon: TrendingUp,
+                  label: "Cashflow Analysis",
+                  desc: "Track 3-month trends",
+                  ocid: "dashboard.cashflow.link",
+                },
+                {
+                  to: "/documents",
+                  icon: FileText,
+                  label: "Documents",
+                  desc: "Upload KYC & financials",
+                  ocid: "dashboard.documents.link",
+                },
+                {
+                  to: "/simulator",
+                  icon: Sliders,
+                  label: "Score Simulator",
+                  desc: "What-if scenarios",
+                  ocid: "dashboard.simulator.link",
+                },
+                {
+                  to: "/emi-calculator",
+                  icon: Calculator,
+                  label: t("emiCalculator"),
+                  desc: "Calculate loan repayments",
+                  ocid: "dashboard.emi.link",
+                },
+                {
+                  to: "/score-breakdown",
+                  icon: BarChart2,
+                  label: t("scoreBreakdown"),
+                  desc: "See what drives your score",
+                  ocid: "dashboard.scorebreakdown.link",
+                },
+                {
+                  to: "/ai-copilot",
+                  icon: Bot,
+                  label: t("aiCopilot"),
+                  desc: "Personalized financial insights",
+                  ocid: "dashboard.aicopilot.link",
+                },
+                {
+                  to: "/peer-comparison",
+                  icon: Users,
+                  label: t("peerComparison"),
+                  desc: "Compare with your industry",
+                  ocid: "dashboard.peercomparison.link",
+                },
+                {
+                  to: "/score-history",
+                  icon: LineChart,
+                  label: t("scoreHistory"),
+                  desc: "Track score over time",
+                  ocid: "dashboard.scorehistory.link",
+                },
+                {
+                  to: "/credit-passport",
+                  icon: Award,
+                  label: t("creditPassport"),
+                  desc: "Your digital credit identity",
+                  ocid: "dashboard.creditpassport.link",
+                },
+                {
+                  to: "/loan-marketplace",
+                  icon: Banknote,
+                  label: t("loanMarketplace"),
+                  desc: "Find eligible loan products",
+                  ocid: "dashboard.loanmarketplace.link",
+                },
+                {
+                  to: "/risk-intelligence",
+                  icon: Radar,
+                  label: t("riskIntelligence"),
+                  desc: "Detect financial risk patterns",
+                  ocid: "dashboard.riskintelligence.link",
+                },
+                {
+                  to: "/invisible-score",
+                  icon: Eye,
+                  label: "Invisible Credit Score",
+                  desc: "Score without CIBIL history",
+                  ocid: "dashboard.invisible_score.link",
+                },
+                {
+                  to: "/loan-predictor",
+                  icon: Target,
+                  label: "Loan Approval Predictor",
+                  desc: "AI approval probability per lender",
+                  ocid: "dashboard.loan_predictor.link",
+                },
+                {
+                  to: "/survival-score",
+                  icon: Activity,
+                  label: "Business Survival Score",
+                  desc: "6-12 month survival forecast",
+                  ocid: "dashboard.survival_score.link",
+                },
+              ].map(({ to, icon: Icon, label, desc, ocid }) => (
+                <Link key={to} to={to}>
+                  <Card
+                    data-ocid={ocid}
+                    className="p-4 hover:border-primary/40 hover:shadow-sm transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                        <Icon className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm">{label}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {desc}
+                        </p>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground ml-auto group-hover:text-primary transition-colors shrink-0" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm">{label}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {desc}
-                      </p>
-                    </div>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground ml-auto group-hover:text-primary transition-colors shrink-0" />
-                  </div>
-                </Card>
-              </Link>
-            ))}
+                  </Card>
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       </PageLayout>
