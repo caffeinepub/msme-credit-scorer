@@ -8,14 +8,17 @@ import {
   createRouter,
 } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { AnimatedBackground } from "./AnimatedBackground";
 import { AppContext } from "./hooks/useAppContext";
 import type { Language } from "./lib/i18n";
 import { getLanguage, getSession, seedIfEmpty } from "./lib/store";
 import type { User } from "./lib/types";
 
 import { AICoPilotPage } from "./pages/AICoPilotPage";
+import { AIFraudDetectionPage } from "./pages/AIFraudDetectionPage";
 import { AdminDashboardPage } from "./pages/AdminDashboardPage";
 import { AdminUsersPage } from "./pages/AdminUsersPage";
+import { BankLoanRecommendationPage } from "./pages/BankLoanRecommendationPage";
 import { BusinessSurvivalScorePage } from "./pages/BusinessSurvivalScorePage";
 import { CashflowPage } from "./pages/CashflowPage";
 import { CreditPassportPage } from "./pages/CreditPassportPage";
@@ -24,15 +27,21 @@ import { DocumentsPage } from "./pages/DocumentsPage";
 import { EMICalculatorPage } from "./pages/EMICalculatorPage";
 import { InvisibleCreditScorePage } from "./pages/InvisibleCreditScorePage";
 import { LoanApprovalPredictorPage } from "./pages/LoanApprovalPredictorPage";
+import { LoanEligibilityPage } from "./pages/LoanEligibilityPage";
 import { LoanMarketplacePage } from "./pages/LoanMarketplacePage";
+import { LoanPreApprovalPage } from "./pages/LoanPreApprovalPage";
 import { LoginPage } from "./pages/LoginPage";
+import { MSMEHealthAnalyticsPage } from "./pages/MSMEHealthAnalyticsPage";
 import { PeerComparisonPage } from "./pages/PeerComparisonPage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { RepaymentRiskMonitorPage } from "./pages/RepaymentRiskMonitorPage";
 import { RiskIntelligencePage } from "./pages/RiskIntelligencePage";
 import { ScoreBreakdownPage } from "./pages/ScoreBreakdownPage";
 import { ScoreHistoryPage } from "./pages/ScoreHistoryPage";
 import { SignupPage } from "./pages/SignupPage";
 import { SimulatorPage } from "./pages/SimulatorPage";
+import { SmartLoanRecommendationPage } from "./pages/SmartLoanRecommendationPage";
+import { UPICreditScorePage } from "./pages/UPICreditScorePage";
 
 function RootLayout() {
   return <Outlet />;
@@ -166,6 +175,54 @@ const survivalScoreRoute = createRoute({
   component: BusinessSurvivalScorePage,
 });
 
+const upiCreditScoreRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/upi-credit-score",
+  component: UPICreditScorePage,
+});
+
+const aiFraudDetectionRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/ai-fraud-detection",
+  component: AIFraudDetectionPage,
+});
+
+const smartLoanRecommendationRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/smart-loan-recommendation",
+  component: SmartLoanRecommendationPage,
+});
+
+const msmeHealthAnalyticsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/msme-health-analytics",
+  component: MSMEHealthAnalyticsPage,
+});
+
+const repaymentRiskMonitorRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/repayment-risk-monitor",
+  component: RepaymentRiskMonitorPage,
+});
+
+const loanEligibilityRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/loan-eligibility",
+  component: LoanEligibilityPage,
+});
+
+const bankLoanRecommendationRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/bank-loan-recommendation",
+  component: BankLoanRecommendationPage,
+});
+
+const loanPreApprovalRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/loan-preapproval",
+  component: LoanPreApprovalPage,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
@@ -188,6 +245,14 @@ const routeTree = rootRoute.addChildren([
   invisibleScoreRoute,
   loanPredictorRoute,
   survivalScoreRoute,
+  upiCreditScoreRoute,
+  aiFraudDetectionRoute,
+  smartLoanRecommendationRoute,
+  msmeHealthAnalyticsRoute,
+  repaymentRiskMonitorRoute,
+  loanEligibilityRoute,
+  bankLoanRecommendationRoute,
+  loanPreApprovalRoute,
 ]);
 
 const router = createRouter({ routeTree });
@@ -214,8 +279,13 @@ export default function App() {
 
   return (
     <AppContext.Provider value={{ user, setUser, language, setLanguage }}>
-      <RouterProvider router={router} />
-      <Toaster richColors position="top-right" />
+      {/* Premium animated background — fixed layer behind all content */}
+      <AnimatedBackground />
+      {/* App content rendered above the animation */}
+      <div style={{ position: "relative", zIndex: 1, minHeight: "100vh" }}>
+        <RouterProvider router={router} />
+        <Toaster richColors position="top-right" />
+      </div>
     </AppContext.Provider>
   );
 }

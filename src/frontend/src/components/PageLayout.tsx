@@ -6,7 +6,10 @@ interface PageLayoutProps {
 
 export function PageLayout({ children }: PageLayoutProps) {
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div
+      className="min-h-screen flex flex-col bg-background"
+      style={{ position: "relative", zIndex: 1 }}
+    >
       <NavBar />
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-6">
         {children}

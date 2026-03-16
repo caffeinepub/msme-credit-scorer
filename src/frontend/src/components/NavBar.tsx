@@ -3,11 +3,19 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
+  AlertTriangle,
+  BarChart3,
   Calculator,
+  CheckSquare,
+  CreditCard,
   FileText,
+  Landmark,
   LayoutDashboard,
+  Lightbulb,
   LogOut,
   Shield,
+  ShieldAlert,
+  ShieldCheck,
   Sliders,
   TrendingUp,
   User,
@@ -93,6 +101,54 @@ export function NavBar() {
             label: t("emiCalculator"),
             icon: Calculator,
             ocid: "nav.emi_calculator.link",
+          },
+          {
+            to: "/loan-eligibility",
+            label: "Loan Eligibility",
+            icon: CheckSquare,
+            ocid: "nav.loan_eligibility.link",
+          },
+          {
+            to: "/bank-loan-recommendation",
+            label: "Bank Advisor",
+            icon: Landmark,
+            ocid: "nav.bank_advisor.link",
+          },
+          {
+            to: "/loan-preapproval",
+            label: "Pre-Approval",
+            icon: ShieldCheck,
+            ocid: "nav.loan_preapproval.link",
+          },
+          {
+            to: "/upi-credit-score",
+            label: "UPI Score",
+            icon: CreditCard,
+            ocid: "nav.upi_score.link",
+          },
+          {
+            to: "/ai-fraud-detection",
+            label: "Fraud Detection",
+            icon: ShieldAlert,
+            ocid: "nav.fraud_detection.link",
+          },
+          {
+            to: "/smart-loan-recommendation",
+            label: "Loan Advisor",
+            icon: Lightbulb,
+            ocid: "nav.loan_advisor.link",
+          },
+          {
+            to: "/msme-health-analytics",
+            label: "Health Analytics",
+            icon: BarChart3,
+            ocid: "nav.health_analytics.link",
+          },
+          {
+            to: "/repayment-risk-monitor",
+            label: "Risk Monitor",
+            icon: AlertTriangle,
+            ocid: "nav.risk_monitor.link",
           },
         ];
 
