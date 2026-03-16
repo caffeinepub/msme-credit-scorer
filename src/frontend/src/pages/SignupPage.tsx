@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -13,6 +12,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { AnimatedSidePanel } from "../components/AnimatedSidePanel";
 import { useAppContext } from "../hooks/useAppContext";
 import { useT } from "../hooks/useT";
 import { login, signUp } from "../lib/store";
@@ -80,41 +80,64 @@ export function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4 py-12">
-      {/* Background */}
-      <div className="fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-accent/10 blur-3xl" />
-      </div>
-
-      {/* Logo */}
-      <div className="mb-8 flex flex-col items-center gap-3">
-        <img
-          src="/assets/generated/credvist-logo-transparent.dim_400x400.png"
-          alt="CredVist logo"
-          className="w-16 h-16 object-contain drop-shadow-lg"
-        />
-        <div className="text-center">
-          <h1 className="font-display text-2xl font-bold text-foreground">
-            Cred<span className="text-primary">Vist</span>
-          </h1>
-          <p className="text-xs text-muted-foreground mt-1">
-            Build Your Financial Identity
-          </p>
+    <div className="min-h-screen flex" style={{ backgroundColor: "#F5F6FA" }}>
+      {/* ── Left: Signup form ───────────────────────────────── */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 lg:px-12 min-h-screen">
+        {/* Logo */}
+        <div className="mb-8 flex flex-col items-center gap-3">
+          <img
+            src="/assets/generated/credvist-logo-transparent.dim_400x400.png"
+            alt="CredVist logo"
+            className="w-14 h-14 object-contain drop-shadow-md"
+            style={{ animation: "pulseLogo 3s ease-in-out infinite" }}
+          />
+          <div className="text-center">
+            <h1
+              className="text-2xl font-bold"
+              style={{
+                fontFamily: "'Montserrat', 'Bricolage Grotesque', sans-serif",
+                color: "#202124",
+              }}
+            >
+              Cred<span style={{ color: "#1A73E8" }}>Vist</span>
+            </h1>
+            <p
+              className="text-xs mt-1"
+              style={{ color: "#6B7280", fontFamily: "'Roboto', sans-serif" }}
+            >
+              Build Your Financial Identity
+            </p>
+          </div>
         </div>
-      </div>
 
-      <Card className="w-full max-w-sm shadow-md border-border">
-        <CardHeader className="pb-2 pt-6 px-6">
-          <h2 className="font-display text-xl font-bold">{t("signup")}</h2>
-          <p className="text-sm text-muted-foreground">
+        {/* Form card */}
+        <div
+          className="w-full max-w-sm rounded-2xl p-8 shadow-lg"
+          style={{ background: "#ffffff" }}
+        >
+          <h2
+            className="text-xl font-bold mb-1"
+            style={{
+              fontFamily: "'Montserrat', 'Bricolage Grotesque', sans-serif",
+              color: "#202124",
+            }}
+          >
+            {t("signup")}
+          </h2>
+          <p
+            className="text-sm mb-6"
+            style={{ color: "#6B7280", fontFamily: "'Roboto', sans-serif" }}
+          >
             Create your CredVist account
           </p>
-        </CardHeader>
-        <CardContent className="px-6 pb-6">
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-sm">
+              <Label
+                htmlFor="email"
+                className="text-sm font-medium"
+                style={{ color: "#202124", fontFamily: "'Roboto', sans-serif" }}
+              >
                 {t("email")}
               </Label>
               <Input
@@ -124,16 +147,31 @@ export function SignupPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@business.com"
-                className={errors.email ? "border-destructive" : ""}
                 autoComplete="email"
+                style={{ fontFamily: "'Roboto', sans-serif" }}
+                className={`rounded-xl border shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-[#1A73E8]/40 focus-visible:border-[#1A73E8] ${
+                  errors.email ? "border-[#EA4335]" : "border-gray-200"
+                }`}
               />
               {errors.email && (
-                <p className="text-xs text-destructive">{errors.email}</p>
+                <p
+                  className="text-xs"
+                  style={{
+                    color: "#EA4335",
+                    fontFamily: "'Roboto', sans-serif",
+                  }}
+                >
+                  {errors.email}
+                </p>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-sm">
+              <Label
+                htmlFor="password"
+                className="text-sm font-medium"
+                style={{ color: "#202124", fontFamily: "'Roboto', sans-serif" }}
+              >
                 {t("password")}
               </Label>
               <Input
@@ -143,20 +181,37 @@ export function SignupPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Min. 6 characters"
-                className={errors.password ? "border-destructive" : ""}
                 autoComplete="new-password"
+                style={{ fontFamily: "'Roboto', sans-serif" }}
+                className={`rounded-xl border shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-[#1A73E8]/40 focus-visible:border-[#1A73E8] ${
+                  errors.password ? "border-[#EA4335]" : "border-gray-200"
+                }`}
               />
               {errors.password && (
-                <p className="text-xs text-destructive">{errors.password}</p>
+                <p
+                  className="text-xs"
+                  style={{
+                    color: "#EA4335",
+                    fontFamily: "'Roboto', sans-serif",
+                  }}
+                >
+                  {errors.password}
+                </p>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-sm">{t("role")}</Label>
+              <Label
+                className="text-sm font-medium"
+                style={{ color: "#202124", fontFamily: "'Roboto', sans-serif" }}
+              >
+                {t("role")}
+              </Label>
               <Select value={role} onValueChange={(v) => setRole(v as Role)}>
                 <SelectTrigger
                   data-ocid="signup.role.select"
-                  className="w-full"
+                  className="w-full rounded-xl border-gray-200 shadow-sm"
+                  style={{ fontFamily: "'Roboto', sans-serif" }}
                 >
                   <SelectValue />
                 </SelectTrigger>
@@ -170,7 +225,13 @@ export function SignupPage() {
             {errors.form && (
               <div
                 data-ocid="signup.error_state"
-                className="rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs text-destructive"
+                className="rounded-xl px-3 py-2 text-xs"
+                style={{
+                  background: "rgba(234,67,53,0.08)",
+                  border: "1px solid rgba(234,67,53,0.2)",
+                  color: "#EA4335",
+                  fontFamily: "'Roboto', sans-serif",
+                }}
               >
                 {errors.form}
               </div>
@@ -179,8 +240,15 @@ export function SignupPage() {
             <Button
               type="submit"
               data-ocid="signup.submit_button"
-              className="w-full"
+              className="w-full rounded-xl font-semibold py-2.5 text-white shadow-md transition-all active:scale-95"
               disabled={isLoading}
+              style={{
+                background: isLoading
+                  ? "#9CA3AF"
+                  : "linear-gradient(90deg, #1A73E8 0%, #34A853 100%)",
+                fontFamily: "'Roboto', sans-serif",
+                border: "none",
+              }}
             >
               {isLoading ? (
                 <>
@@ -193,17 +261,26 @@ export function SignupPage() {
             </Button>
           </form>
 
-          <div className="mt-4 text-center text-sm text-muted-foreground">
+          <div
+            className="mt-4 text-center text-sm"
+            style={{ color: "#6B7280", fontFamily: "'Roboto', sans-serif" }}
+          >
             Already have an account?{" "}
             <Link
               to="/login"
-              className="text-primary hover:underline font-medium"
+              className="font-medium hover:underline"
+              style={{ color: "#1A73E8" }}
             >
               {t("login")}
             </Link>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+
+      {/* ── Right: Animated Side Panel ──────────────────────── */}
+      <div className="hidden md:block w-[45%] lg:w-1/2 min-h-screen">
+        <AnimatedSidePanel />
+      </div>
     </div>
   );
 }

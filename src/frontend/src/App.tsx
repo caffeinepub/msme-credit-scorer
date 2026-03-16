@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AnimatedBackground } from "./AnimatedBackground";
+import { SidePanelAnimation } from "./components/SidePanelAnimation";
 import { AppContext } from "./hooks/useAppContext";
 import type { Language } from "./lib/i18n";
 import { getLanguage, getSession, seedIfEmpty } from "./lib/store";
@@ -281,6 +282,8 @@ export default function App() {
     <AppContext.Provider value={{ user, setUser, language, setLanguage }}>
       {/* Premium animated background — fixed layer behind all content */}
       <AnimatedBackground />
+      {/* Side panel animations — rendered only in white space outside max-w-7xl */}
+      <SidePanelAnimation />
       {/* App content rendered above the animation */}
       <div style={{ position: "relative", zIndex: 1, minHeight: "100vh" }}>
         <RouterProvider router={router} />

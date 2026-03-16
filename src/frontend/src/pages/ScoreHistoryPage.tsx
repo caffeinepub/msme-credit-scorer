@@ -290,7 +290,7 @@ function ScoreLineChart({ history }: { history: ScoreSnapshot[] }) {
               className="w-6 h-0.5 rounded-full"
               style={{ background: "oklch(0.72 0.18 75)" }}
             />
-            <span className="text-xs text-muted-foreground">CIBIL Score</span>
+            <span className="text-xs text-muted-foreground">Bureau Score</span>
           </div>
         )}
       </div>
@@ -389,7 +389,7 @@ export function ScoreHistoryPage() {
                       <TableHead className="pl-6">Date</TableHead>
                       <TableHead>Alt Score</TableHead>
                       <TableHead>Trust Score</TableHead>
-                      <TableHead>Traditional</TableHead>
+                      <TableHead>Bureau Score</TableHead>
                       <TableHead className="pr-6">Risk Tier</TableHead>
                     </TableRow>
                   </TableHeader>

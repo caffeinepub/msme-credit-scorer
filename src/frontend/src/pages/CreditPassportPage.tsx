@@ -73,8 +73,8 @@ export function CreditPassportPage() {
       `Alt Score: ${creditScore.altScore}/900`,
       `Business Trust: ${creditScore.trustScore}/100`,
       creditScore.traditionalScore
-        ? `CIBIL Score: ${creditScore.traditionalScore}/900`
-        : "CIBIL Score: Not provided",
+        ? `Credit Bureau Score: ${creditScore.traditionalScore}/900`
+        : "Credit Bureau Score: Not provided",
       `Risk Tier: ${creditScore.riskTier} Risk`,
       "",
       "FINANCIALS",
@@ -312,7 +312,7 @@ export function CreditPassportPage() {
                     </span>
                   )}
                   <p className="text-xs text-muted-foreground mt-1 text-center">
-                    CIBIL Score
+                    Credit Bureau Score
                   </p>
                 </Card>
               </div>
